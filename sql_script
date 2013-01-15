@@ -1,0 +1,10 @@
+CREATE TABLE q_info 
+(
+q_id int unsigned not null auto_increment primary key,
+client_id char(20) not null, 
+restaurant_id char(20) not null,
+phone char(15),
+check_in_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+
+

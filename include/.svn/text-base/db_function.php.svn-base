@@ -1,0 +1,92 @@
+<?php
+
+/*
+
+return
+-1 : database error
+-2 : client already in the queue
+-3 : 
+*/
+function checkIn($db, $client_id,$restaurant_id, $phone){
+
+	$query = "SELECT * FROM q_info
+		WHERE client_id = $client_id and restaurant_id = $restaurant_id;
+	";
+	$result = $db->query($query);
+
+	if (!$result){
+		return -1;}
+	// the client is already in the queue
+
+	if ($result->num_rows != 0)
+		return -2;
+
+	$query = "INSERT INTO q_info 
+		(client_id,restaurant_id,phone,check_in_time)
+		Values ($client_id, $restaurant_id, $phone,DEFAULT);
+	         ";
+	$result = $db->query($query);
+
+	if ($result)
+		return 1;
+	else 
+		return -3;
+}
+
+function quit($db, $client_id, $restaurant_id){
+	$query = "DELETE FROM q_info
+		WHERE client_id = $client_id and restaurant_id = $restaurant_id";
+
+	$result = $db->query($query);
+	if ($result)
+		return true;
+	else
+		return false;
+}
+/*
+if force is true, the client doesn't have to be on top of the queue
+return:
+1 : success
+-1: database error
+-2: not on top of the queue
+*/
+function checkOut($db, $client_id, $restaurant_id,$force=false){
+	if ($force){
+		quit($db, $client_id, $restaurant_id);
+		return 1; 
+	}
+	$rank = queryRank ($db, $client_id, $restaurant_id);
+	if ($rank == 0){
+		quit($db, $client_id, $restaurant_id);
+		return 1;
+	}
+	elseif ($rank < 0)
+		return -1;
+	else
+		return -2;
+}
+
+function queryRank($db, $client_id, $restaurant_id){
+	$query = "SELECT * FROM q_info WHERE client_id = $client_id and restaurant_id = $restaurant_id;";
+
+	$result = $db->query($query);
+
+	if (!$result)
+		return -1;
+	//The client not in the database
+	if ($result->num_rows == 0)
+		return -1;
+
+	for ($i = 0; $i < $result->num_rows; $i++){
+		$row = $result->fetch_assoc();
+		$q_id = $row['q_id'];
+	}
+	$query = "SELECT * FROM q_info WHERE restaurant_id = $restaurant_id and q_id < $q_id";
+	$result->free();
+	$result = $db->query($query);
+	$rank = 1 + $result->num_rows;
+	$result->free();
+	return $rank;
+}
+
+?>
