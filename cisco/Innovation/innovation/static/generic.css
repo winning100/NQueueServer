@@ -1,0 +1,11 @@
+body {
+  padding-top:40px;
+}
+
+td.notified_false {
+  background : red;
+}
+td.notified_true {
+  background : green;
+}
+

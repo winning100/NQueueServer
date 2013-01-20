@@ -1,0 +1,150 @@
+<html>
+<head>
+  <title>NQueue | ${b_name} Management</title>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/>
+  <meta name="keywords" content="python web application" />
+  <meta name="description" content="NQueue Management" />
+  <script src="http://code.jquery.com/jquery-1.8.3.js"></script>
+  <script src="http://code.jquery.com/ui/1.9.2/jquery-ui.js"></script>
+  <link href="${request.static_url('innovation:static/bootstrap/css/bootstrap.min.css')}" rel="stylesheet" media="screen">
+</head>
+<body>
+  <center>
+    <%include file="header.mako"/>
+
+    <p id="b_id" contenteditable=True>${b_id}</p>
+    <button id='refresh'>Refresh Queue</button>
+
+    <div id="table_container">
+      <table id="queue_manager" class="table">
+        <thead>
+          <tr>
+            <th>Client ID</th>
+            <th>Phone Number</th>
+            <th>Check-In Time</th>
+            <th>Notified?</th>
+            <th>Remove Entry</th>
+            <th>Notify Client</th>
+            <th>Addition Type</th>
+          </tr>  
+        </thead>
+        <tbody id="sortable">
+        </tbody>
+      </table>
+    </div>
+
+  <h6>Add a User Manually</h6>
+  <form id='add_to_queue' action=#>
+    ID / Name : <input type="text" id="client_id_manual"><br>
+    Telephone: <input type="text" id="client_phone_manual"><br>
+    <input type="submit" value="Submit" id="add_button" class="btn">
+    <label class="error" for="client_id_manual" id="name_error">You need to input a name!</label><br>
+  </form>
+  
+  </center>
+  <script>
+  $('.error').hide();  
+
+  $(document).ready(function(){
+    $("#add_button").click(function(){
+      var b_id = $("#b_id").html();
+      var c_id = $("#client_id_manual").val();
+      var telephone = $("#client_phone_manual").val();
+      if (c_id == "") {
+        $("label#name_error").show();
+        $("#name_error").focus();
+        return false;
+      }
+      $.ajax({
+        type:"POST",
+        url:"/add_to_queue_manual",
+        data:{ _id : b_id, client_id : c_id, tel : telephone},
+        success:function(result){
+          $('.error').hide();  
+          console.log("Successful");
+          refresh_queue();
+        }
+        });
+    });
+  });
+
+  function delete_row(xrow) {
+    var b_id = $("#b_id").html();
+    var c_id = $(xrow).closest("tr").children('td.client_id').html();
+    console.log(c_id)
+    $.ajax({
+      type:"POST",
+      url:"/remove",
+      data:{ _id : b_id, client_id : c_id},
+      success:function(result){
+        if (result == 'OK') {
+          console.log(c_id + " was removed from the queue!");
+          $(xrow).closest("tr").remove();
+        } else if (result == "NO") {
+          console.log(c_id + " was NOT removed successfully from the queue");
+          alert(c_id + " was NOT removed successfully from the queue");
+        }
+      }
+    });
+  };
+
+  function notify_row(xrow) {
+    var b_id = $("#b_id").html();
+    var c_id = $(xrow).closest("tr").children('td.client_id').html();
+    var telephone = $(xrow).closest("tr").children('td.telephone').html();
+    $.ajax({
+      type:"POST",
+      url:"/notify_user",
+      data:{ _id : b_id, client_id : c_id, tel : telephone},
+      success:function(result){
+        console.log("Successful");
+        if (result == 'OK') {
+          refresh_queue();
+        } else if(result == 'NO') {
+          alert("Unable to notify the user!!!")
+        }
+      }
+      });
+  };
+
+  $(function() {
+    $( "#sortable" ).sortable();
+    $( "#sortable" ).disableSelection();
+  });
+
+  $(document).ready(function(){
+    $("#refresh").click(function(){
+      var b_id = $("#b_id").html();
+      $.ajax({
+        type:"POST",
+        url:"/get_queue",
+        data:{ _id : b_id},
+        success:function(result){
+          $('#queue_manager').children('tbody').html(result);
+        }
+      });
+    });
+  });
+
+  $(document).ready(function(){
+    refresh_queue();
+    });
+
+    function refresh_queue(){
+      var b_id = $("#b_id").html();
+      $.ajax({
+        type:"POST",
+        url:"/get_queue",
+        data:{ _id : b_id},
+        success:function(result){
+          $('#queue_manager').children('tbody').html(result);
+        }
+      });
+
+    }
+
+
+  </script>
+</body>
+</html>
+
